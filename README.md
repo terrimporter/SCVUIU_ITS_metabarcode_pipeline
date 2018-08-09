@@ -8,10 +8,9 @@ This repository contains an ITS metabarcode pipeline that can be used to process
 [Part 2 - Trim primers](#part-2---trim-primers)  
 [Part 3 - Dereplicate reads](#part-3---dereplicate-reads)  
 [Part 4 - Denoise reads](#part-4---denoise-reads)  
-[Part 5 - Cluster into OTUs](#part-5---cluster-into-otus)  
-[Part 6 - Generate OTU table](#part-6---generate-otu-table)  
-[Part 7 Extract ITS2 region](#part-7---extract-its2-region)  
-[Part 8 - Taxonomic assignment](#part-8---taxonomic-assignment)  
+[Part 5 - Generate ESV table](#part-5---generate-esv-table)  
+[Part 6 Extract ITS2 region](#part-6---extract-its2-region)  
+[Part 7 - Taxonomic assignment](#part-7---taxonomic-assignment)  
 [Implementation notes](#implementation-notes)  
 [References](#references)  
 [Acknowledgements](#acknowledgements)  
@@ -56,16 +55,7 @@ I used USEARCH v9.1.13 with the unoise2 algorithm with the default settings exce
 usearch9 -unoise2 cat.uniques -fastaout cat.denoised -minampsize 3
 ~~~
 
-## Part 5 - Cluster into OTUs
-
-OTUs defined by 97% sequence similarity were generated with the USEARCH9.  First denoised reads were sorted by decreasing length throwing out singletons.  Then they were clustered using the uparse pipeline with the default settings except that singletons and doubletons were excluded.
-
-~~~linux
-usearch9 -sortbysize cat.denoised -minsize 2 -fastaout cat.denoised.sort2
-usearch9 -cluster_otus cat.denoised.sort2 -otus cat.denoised.sort2.centroids3 -uparseout cat.denoised.sort2.up -minsize 3
-~~~
-
-## Part 6 - Generate OTU table
+## Part 5 - Generate ESV table
 
 An OTU table is generated in USEARCH9 with the default settings and specifying an identity cutoff of 97% sequence similarity.
 
@@ -73,7 +63,7 @@ An OTU table is generated in USEARCH9 with the default settings and specifying a
 usearch9 -usearch_global cat.fasta -db cat.denoised.sort2.centroids3 -strand plus -id 0.97 -otuabout cat.fasta.table97
 ~~~
 
-## Part 7 - Extract ITS2 region
+## Part 6 - Extract ITS2 region
 
 The leading and trailing regions of the ITS2 region are retrieved using the ITSx program available from http://microbiology.se/software/itsx/ (Bengtsson-Palme et al., 2013).  Be sure to adjust the --cpu flag according to how many cpus you want to use.
 
@@ -81,19 +71,13 @@ The leading and trailing regions of the ITS2 region are retrieved using the ITSx
 ITSx -i cat.denoised.sort2.centroids3 -o cat.denoised.sort2.centroids3 --cpu 15
 ~~~
 
-## Part 8 - Taxonomic assignment
+## Part 7 - Taxonomic assignment
 
 Taxonomic assignments were performed using the Ribosomal Database Project (RDP) Classifier (Wang et al., 2007).  Read counts from the OTU table were mapped to the RDP classifier taxonomic assignments using add_abundance_to_rdp_out3.plx .  The ITS reference set is available with the RDP Classifier and is called with the -g flag.  The 18S v2.0 reference set is available at https://github.com/terrimporter/18SClassifier/releases.  The unmodified CO1 Classifier v1.0 reference database is available from https://github.com/terrimporter/CO1Classifier/releases .  The ammended CO1 Classifier v2.1 is available as a release from this repository at https://github.com/terrimporter/JesseHoage2018/releases
 
 ~~~linux
 #Classify the ITS sequences
 java -Xmx8g -jar /path/to/rdp_classifier_2.12/dist/classifier.jar classify -g fungalits_unite -o rdp.out cat.denoised.sort2.centroids3.ITS2.fasta
-
-#Classify the 18S sequences
-java -Xmx8g -jar /path/to/rdp_classifier_2.12/dist/classifier.jar classify -t /path/to/18Sv2.0/rRNAClassifier.properties -o rdp.out cat.denoised.sort2.centroids3
-
-#Classify the COI sequences
-java -Xmx8g -jar /path/to/rdp_classifier_2.12/dist/classifier.jar classify -t /path/to/CO1Classifierv1.0/rRNAClassifier.properties -o rdp.out cat.denoised.sort2.centroids3
 
 #Map read counts from OTU table to the RDP taxonomic assignments
 #Do this individually for each marker
@@ -141,9 +125,6 @@ read_counts_uniques
 #Get the denoised ESV summary stats and read counts
 stats_denoised
 read_count_denoised
-
-#Get centroid stats
-stats_centroids3
 
 #Get the ITS2 summary stats
 stats_fasta
