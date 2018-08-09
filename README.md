@@ -93,7 +93,6 @@ Taxonomic assignments were performed using the Ribosomal Database Project (RDP) 
 java -Xmx8g -jar /path/to/rdp_classifier_2.12/dist/classifier.jar classify -g fungalits_unite -o rdp.out cat.denoised..ITS2.fasta
 
 #Map read counts from OTU table to the RDP taxonomic assignments
-#Do this individually for each marker
 perl add_abundance_to_rdp_out3.plx cat.denoised.table rdp.out
 ~~~
 
