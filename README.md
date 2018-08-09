@@ -10,7 +10,7 @@ This repository contains an ITS metabarcode pipeline that can be used to process
 [Part IV - Primer trimming](#part-iv---primer-trimming)  
 [Part V - Dereplicate reads](#part-v---dereplicate-reads)  
 [Part VI - Denoising](#part-vi---denoising)  
-[Part VII Extract ITS2 region](#part-vii---extract-its2-region)  
+[Part VII - Extract ITS2 region](#part-vii---extract-its2-region)  
 [Part VIII - Taxonomic assignment](#part-viii---taxonomic-assignment)  
 [Implementation notes](#implementation-notes)  
 [References](#references)  
