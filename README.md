@@ -4,84 +4,97 @@ This repository contains an ITS metabarcode pipeline that can be used to process
 
 ## Overview
 
-[Part 1 - Pair forward and reverse reads](#part-1---pair-forward-and-reverse-reads)  
-[Part 2 - Trim primers](#part-2---trim-primers)  
-[Part 3 - Dereplicate reads](#part-3---dereplicate-reads)  
-[Part 4 - Denoise reads](#part-4---denoise-reads)  
-[Part 5 - Generate ESV table](#part-5---generate-esv-table)  
-[Part 6 Extract ITS2 region](#part-6---extract-its2-region)  
-[Part 7 - Taxonomic assignment](#part-7---taxonomic-assignment)  
+[Part I - Link to raw files](#part-i---link-to-raw-files)  
+[Part II - Forward and reverse read number check](#part-ii---forward-and-reverse-read-number-check)
+[Part III - Read pairing](#part-iii---read-pairing)  
+[Part IV - Primer trimming](#part-iv---primer-trimming)  
+[Part V - Dereplicate reads](#part-v---dereplicate-reads)  
+[Part VI - Denoising](#part-vi---denoising)  
+[Part VII Extract ITS2 region](#part-vii---extract-its2-region)  
+[Part VIII - Taxonomic assignment](#part-viii---taxonomic-assignment)  
 [Implementation notes](#implementation-notes)  
 [References](#references)  
 [Acknowledgements](#acknowledgements)  
 
-## Part 1 - Pair forward and reverse reads
+## Part I - Link to raw files
 
-I used SEQPREP (available from https://github.com/jstjohn/SeqPrep ) to pair forward and reverse reads using the default settings except that we required a minimum Phred score of 20 at the ends and a minimum overlap of 25 bp.  This can be automated to run on a batch of infiles using a shell script or GNU parallel.
+This pipeline is meant to process Illumina paired-end reads from COI metabarcoding. To save space in my directory, I create symbolic links to the raw .gz files. The command linkfiles calls the script link_files.sh
 
 ~~~linux
-seqprep -f R1.fq -r R2.fq -1 R1.out -2 R2.out -q 20 -s basename.paired.fastq.gz -E basename.paired.aln.gz -o 25
+linkfiles
 ~~~
 
-## Part 2 - Trim primers
+## Part II - Forward and reverse read number check
 
-I used CUTADAPT v1.10 to sequentially remove primers with the default settings except that we required a minimum of 150 bp after primer removal, required a minimum Phred score of 20 at the ends, and allowing a maximum of 3 N's.  The -g flag trims the primer off the 5' end of paired reads.
+I make sure that the number of reads in the forward R1 files are the same as those in the reverwe R2 files. The command gz_stats calls the script run_fastq_gz_stats.sh. Therein the stats2 command links to the fastq_gz_stats.plx script. The filename suffix that targets R1 and R2 files needs to be supplied as an argument.
 
 ~~~linux
-ls | grep .fastq | parallel -j 15 "cutadapt -g <INSERT FORWARD PRIMER SEQ> -m 150 -q 20,20 --max-n=3 --discard-untrimmed {} > {}.Ftrimmed.fastq"
+gz_stats R1.fq.gz > R1.stats
+gz_stats R2.fz.gz > R2.stats
 ~~~
 
-The -a flag trims the primer off the 3' end of paired reads.
+## Part III - Read pairing
+
+I use SEQPREP (available from https://github.com/jstjohn/SeqPrep ) to pair forward and reverse reads using the default settings except that we required a minimum Phred score of 20 at the ends and a minimum overlap of 25 bp.  The command pair runs the script runseqprep_gz.sh .   I check the read stats by running the gz_stats command described in Part II.
 
 ~~~linux
-ls | grep .Ftrimmed.fastq | parallel -j 15 "cutadapt -a <INSERT REVERSE COMPLEMENTED PRIMER SEQ> -m 150 -q 20,20 --max-n=3 --discard-untrimmed {} > {}.Rtrimmed"
+pair _R1.fq.gz _R2.fq.gz
+gz_stats gz > paired.stats
 ~~~
 
-## Part 3 - Dereplicate reads
+## Part IV - Primer trimming
 
-I add the sample name to FASTA headers using the rename_all_fastas command that links to the run_rename_fasta.sh script.  Therein, the rename_fasta command links to the rename_fasta.plx script.  This step is necessary for proper OTU table generation in USEARCH.  This command should be run in a directory of FASTA files.  This step also produces a single concatenated FASTA file to permit a GLOBAL sample analysis in VSEARCH and USEARCH.  Then I change any dashes in the FASTA headers to underscores so that the OTU table is generated properly in USEARCH using the program vi Editor.  Read dereplication is carried out with VSEARCH using the default parameters but tracking the number of clustered reads with the --sizein and --sizeout flags.
+I used CUTADAPT v1.13 to sequentially remove primers with the default settings except that we required a minimum of 150 bp after primer removal, required a minimum Phred score of 20 at the ends, and allowing a maximum of 3 N's (Martin, 2011).  I run CUTADAPT with GNU parallel using as many cores as possible (Tang, 2011).  The -g flag trims the primer off the 5' end of paired reads.  The forward primer is trimmed with the -g flag. I use default settings but require a minimum length after trimming of at least 150 bp, minimum read quality of Phred 20 at the ends of the sequences, and I allow a maximum of 3 N's. I get read stats by running the gz_stats command described in Part II. The reverse primer is inidicated with the -a flag and the primer sequence should be reverse-complemented when analyzing paired-reads. CUTADAPT will automatically detect compressed fastq.gz files for reading and will convert these to .fasta.gz files based on the file extensions provided. I get read stats by running the fasta_gz_stats command that calls the run_bash_fasta_gz_stats.sh script. Therein the stats3 command links to the fasta_gz_stats.plx script.
 
 ~~~linux
-rename_all_fastas
-vi -c "%s/-/_/g" -c "wq" cat.fasta
+ls | grep .fastq | parallel -j 20 "cutadapt -g <INSERT FORWARD PRIMER SEQ> -m 150 -q 20,20 --max-n=3 --discard-untrimmed -o {}.Ftrimmed.fastq.gz {}"
+gz_stats gz > Ftrimmed.stats
+ls | grep .Ftrimmed.fastq | parallel -j 20 "cutadapt -a <INSERT REVERSE COMPLEMENTED PRIMER SEQ> -m 150 -q 20,20 --max-n=3 --discard-untrimmed -o {}.Rtrimmed.fasta.gz {}"
+fasta_gz_stats gz > Rtrimmed.stats
+~~~
+
+## Part V - Dereplicate reads
+
+I prepare the files for dereplication by adding sample names parsed from the filenames to the fasta headers using the rename_all_fastas command that calls the run_rename_fasta.sh. Therein the rename_fasta command calls the rename_fasta_gzip.plx script. The results are concatenated and compressed. The outfile is cat.fasta.gz . I change all dashes with underscores in the fasta files using vi. This large file is dereplicated with VSEARCHv2.5.0 (Rognes et al., 2016). I use the default settings with the --sizein --sizeout flags to track the number of reads in each cluster. I get read stats on the unique sequences using the stats_uniques command that calls the run_fastastats_parallel_uniques.sh script. Therein the stats command links to fasta_stats_parallel.plx . I count the total number of reads that were processed using the read_count_uniques command that calls the get_read_counts_uniques.sh script.
+
+~~~linux
+rename_all_fastas Rtrimmed.fasta.gz
+vi -c "%s/-/_/g" -c "wq" cat.fasta.gz
 vsearch --threads 10 --derep_fulllength cat.fasta --output cat.uniques --sizein --sizeout
+stats_uniques
+read_count_uniques
 ~~~
 
-## Part 4 - Denoise reads
+## Part VI - Denoising
 
-I used USEARCH v9.1.13 with the unoise2 algorithm with the default settings except that I specified a minimum OTU size of 3.  This basically removes singletons and doubletons from the OTU table.
+I denoise the reads using USEARCH10 with the UNOISE3 algorithm (Edgar, 2016). With this program, denoising involves correcting sequences with putative sequencing errors, removing PhiX and putative chimeric sequences, as well as low frequency reads (just singletons and doubletons here). This step can take quite a while to run for large files and I like to submit as a job on its own or use linux screen when working interactively so that I can detach the screen. To account for a bug in USEARCH10, the automatically generated 'Zotu' in the FASTA header needs to be changed to 'Otu' for the ESV/OTU table to be generated correctly in the next step. I get ESV stats using stats_denoised that links to run_fastastats_parallel_denoised.sh. Therein the command stats links to fasta_stats_parallel.plx . I generate an ESV/OTU table by mapping the primer-trimmed reads in cat.fasta to the ESVs in cat.denoised using an identity cutoff of 1.0 .
 
 ~~~linux
-usearch9 -unoise2 cat.uniques -fastaout cat.denoised -minampsize 3
+usearch10 -unoise3 cat.uniques -zotus cat.denoised -minsize 3 > log
+vi -c "%s/>Zotu/>Otu/g" -c "wq" cat.denoised
+stats_denoised
+usearch10 -usearch_global cat.fasta -db cat.denoised -strand plus -id 1.0 -otutabout cat.denoised.table
 ~~~
 
-## Part 5 - Generate ESV table
-
-An OTU table is generated in USEARCH9 with the default settings and specifying an identity cutoff of 97% sequence similarity.
-
-~~~linux
-usearch9 -usearch_global cat.fasta -db cat.denoised.sort2.centroids3 -strand plus -id 0.97 -otuabout cat.fasta.table97
-~~~
-
-## Part 6 - Extract ITS2 region
+## Part VII - Extract ITS2 region
 
 The leading and trailing regions of the ITS2 region are retrieved using the ITSx program available from http://microbiology.se/software/itsx/ (Bengtsson-Palme et al., 2013).  Be sure to adjust the --cpu flag according to how many cpus you want to use.
 
 ~~~linux
-ITSx -i cat.denoised.sort2.centroids3 -o cat.denoised.sort2.centroids3 --cpu 15
+ITSx -i cat.denoised -o cat.denoised --cpu 15
 ~~~
 
-## Part 7 - Taxonomic assignment
+## Part VIII - Taxonomic assignment
 
-Taxonomic assignments were performed using the Ribosomal Database Project (RDP) Classifier (Wang et al., 2007).  Read counts from the OTU table were mapped to the RDP classifier taxonomic assignments using add_abundance_to_rdp_out3.plx .  The ITS reference set is available with the RDP Classifier and is called with the -g flag.  The 18S v2.0 reference set is available at https://github.com/terrimporter/18SClassifier/releases.  The unmodified CO1 Classifier v1.0 reference database is available from https://github.com/terrimporter/CO1Classifier/releases .  The ammended CO1 Classifier v2.1 is available as a release from this repository at https://github.com/terrimporter/JesseHoage2018/releases
+Taxonomic assignments were performed using the Ribosomal Database Project (RDP) Classifier (Wang et al., 2007).  The ITS reference set is available with the RDP Classifier and is called with the -g flag.  Read counts from the ESV x sample table were mapped to the RDP classifier taxonomic assignments using add_abundance_to_rdp_out3.plx .  You can filter for high confidence taxonomic assignments by using a 0.80 bootstrap support cutoff for long queries or a 0.50 cutoff for queries shorter than 250 bp as recommended on the RDP Classifier website https://rdp.cme.msu.edu/classifier/classifier.jsp 
 
 ~~~linux
 #Classify the ITS sequences
-java -Xmx8g -jar /path/to/rdp_classifier_2.12/dist/classifier.jar classify -g fungalits_unite -o rdp.out cat.denoised.sort2.centroids3.ITS2.fasta
+java -Xmx8g -jar /path/to/rdp_classifier_2.12/dist/classifier.jar classify -g fungalits_unite -o rdp.out cat.denoised..ITS2.fasta
 
 #Map read counts from OTU table to the RDP taxonomic assignments
 #Do this individually for each marker
-perl add_abundance_to_rdp_out3.plx cat.fasta.table97 rdp.out
+perl add_abundance_to_rdp_out3.plx cat.denoised.table rdp.out
 ~~~
 
 ## Implementation notes
@@ -103,36 +116,15 @@ ln -s /path/to/target/directory shortcutName
 ln -s /path/to/script/script.sh commandName
 ~~~
 
-### Summary statistics
-
-At each major step of the data flow described above, fastq files are converted to FASTA files using MOTHUR v1.38.1.  A perl script is then used to calculate sequence statistics including total number of sequences and min/max/mean/median/mode sequence length.  The command stats_R1 runs the Bash script run_fastastats_parallel_R1.sh where the pattern to search for the infiles is hard-coded.  Therein, stats links to the Perl script fasta_stats_parallel.plx.  This script requires the Perl module Statistics::Lite that can be obtained from CPAN.  The command stats_R2 runs the Bash script run_fastastats_parallelR2.sh where the pattern to search for the infiles is hard-coded.  The command stats_fasta links to run_fastastats_parallel_fasta.sh .  The stats_uniques command links to the run_fastastats_parallel_uniques.sh script.  The command read_counts_uniques links to the get_read_counts_uniques.sh .  The stats_denoised command links to the run_fastastats_parallel_denoised.sh . The read_count_denoised command links to the get_read_counts_denoised.sh . The stats_centroids3 command links to the run_fastastats_parallel_centroids3.sh . 
-
-~~~linux
-#Get summary stats for fastq reads
-ls | grep .fastq | parallel -j 23 "mothur '#fastq.info(fast1={})'"
-stats_R1
-stats_R2
-
-#Get summary stats for FASTA files
-stats_fasta
-
-#Get summary stats for the dereplicated OTUs
-stats_uniques
-
-#Get the number of reads contained in the dereplicated OTUs
-read_counts_uniques
-
-#Get the denoised ESV summary stats and read counts
-stats_denoised
-read_count_denoised
-
-#Get the ITS2 summary stats
-stats_fasta
-~~~
-
 ## References
 
 Bengtsson-Palme et al. (2013) Improved software detection and extraction of ITS1 and ITS2 from ribosomal ITS sequences of fungi and other eukaryotes for analysis of environmental sequencing data.  Methods in Ecology and Evolution, 4: 914.  Available from http://microbiology.se/software/itsx/
+
+Edgar, R. C. (2016). UNOISE2: improved error-correction for Illumina 16S and ITS amplicon sequencing. BioRxiv. doi:10.1101/081257 .  Available from: https://www.drive5.com/usearch/
+
+Martin, M. (2011). Cutadapt removes adapter sequences from high-throughput sequencing reads. EMBnet. Journal, 17(1), pp–10.  Available from: http://cutadapt.readthedocs.io/en/stable/index.html
+
+Rognes, T., Flouri, T., Nichols, B., Quince, C., & Mahé, F. (2016). VSEARCH: a versatile open source tool for metagenomics. PeerJ, 4, e2584. doi:10.7717/peerj.2584 .  Available from:  https://github.com/torognes/vsearch
 
 Tange, O. (2011). GNU Parallel - The Command-Line Power Tool. ;;Login: The USENIX Magazine, February, 42–47.  Available from: https://www.gnu.org/software/parallel/
 
