@@ -79,7 +79,7 @@ usearch10 -usearch_global cat.fasta -db cat.denoised -strand plus -id 1.0 -otuta
 
 ## Part VII - Extract ITS2 region
 
-The leading and trailing regions of the ITS2 region are retrieved using the ITSx program available from http://microbiology.se/software/itsx/ (Bengtsson-Palme et al., 2013).  Be sure to adjust the --cpu flag according to how many cpus you want to use.
+The leading and trailing regions of the ITS2 region are retrieved using the ITSx v1.0.11 program available from http://microbiology.se/software/itsx/ (Bengtsson-Palme et al., 2013).  Be sure to adjust the --cpu flag according to how many cpus you want to use.
 
 ~~~linux
 ITSx -i cat.denoised -o cat.denoised --cpu 15
