@@ -27,7 +27,7 @@ linkfiles
 
 ## Part II - Forward and reverse read number check
 
-I make sure that the number of reads in the forward R1 files are the same as those in the reverwe R2 files. The command gz_stats calls the script run_fastq_gz_stats.sh. Therein the stats2 command links to the fastq_gz_stats.plx script. The filename suffix that targets R1 and R2 files needs to be supplied as an argument.
+I make sure that the number of reads in the forward R1 files are the same as those in the reverwe R2 files. The command gz_stats calls the script run_bash_fastq_gz_stats.sh. Therein the stats2 command links to the fastq_gz_stats.plx script. The filename suffix that targets R1 and R2 files needs to be supplied as an argument.
 
 ~~~linux
 gz_stats R1.fq.gz > R1.stats
@@ -68,7 +68,7 @@ read_count_uniques
 
 ## Part VI - Denoising
 
-I denoise the reads using USEARCH10 with the UNOISE3 algorithm (Edgar, 2016). With this program, denoising involves correcting sequences with putative sequencing errors, removing PhiX and putative chimeric sequences, as well as low frequency reads (just singletons and doubletons here). This step can take quite a while to run for large files and I like to submit as a job on its own or use linux screen when working interactively so that I can detach the screen. To account for a bug in USEARCH10, the automatically generated 'Zotu' in the FASTA header needs to be changed to 'Otu' for the ESV/OTU table to be generated correctly in the next step. I get ESV stats using stats_denoised that links to run_fastastats_parallel_denoised.sh. Therein the command stats links to fasta_stats_parallel.plx . I generate an ESV/OTU table by mapping the primer-trimmed reads in cat.fasta to the ESVs in cat.denoised using an identity cutoff of 1.0 .
+I denoise the reads using USEARCH v10.0.240 with the UNOISE3 algorithm (Edgar, 2016). With this program, denoising involves correcting sequences with putative sequencing errors, removing PhiX and putative chimeric sequences, as well as low frequency reads (just singletons and doubletons here). This step can take quite a while to run for large files and I like to submit as a job on its own or use linux screen when working interactively so that I can detach the screen. To account for a bug in USEARCH10, the automatically generated 'Zotu' in the FASTA header needs to be changed to 'Otu' for the ESV/OTU table to be generated correctly in the next step. I get ESV stats using stats_denoised that links to run_fastastats_parallel_denoised.sh. Therein the command stats links to fasta_stats_parallel.plx . I generate an ESV/OTU table by mapping the primer-trimmed reads in cat.fasta to the ESVs in cat.denoised using an identity cutoff of 1.0 .
 
 ~~~linux
 usearch10 -unoise3 cat.uniques -zotus cat.denoised -minsize 3 > log
