@@ -5,13 +5,14 @@ This repository contains an ITS metabarcode pipeline that can be used to process
 ## Overview
 
 [Part I - Link to raw files](#part-i---link-to-raw-files)  
-[Part II - Forward and reverse read number check](#part-ii---forward-and-reverse-read-number-check)
+[Part II - Forward and reverse read number check](#part-ii---forward-and-reverse-read-number-check)  
 [Part III - Read pairing](#part-iii---read-pairing)  
 [Part IV - Primer trimming](#part-iv---primer-trimming)  
 [Part V - Dereplicate reads](#part-v---dereplicate-reads)  
 [Part VI - Denoising](#part-vi---denoising)  
 [Part VII - Extract ITS2 region](#part-vii---extract-its2-region)  
 [Part VIII - Taxonomic assignment](#part-viii---taxonomic-assignment)  
+
 [Implementation notes](#implementation-notes)  
 [References](#references)  
 [Acknowledgements](#acknowledgements)  
