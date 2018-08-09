@@ -87,7 +87,7 @@ ITSx -i cat.denoised -o cat.denoised --cpu 15
 
 ## Part VIII - Taxonomic assignment
 
-Taxonomic assignments were performed using the Ribosomal Database Project (RDP) Classifier (Wang et al., 2007).  The ITS reference set is available with the RDP Classifier and is called with the -g flag.  Read counts from the ESV x sample table were mapped to the RDP classifier taxonomic assignments using add_abundance_to_rdp_out3.plx .  You can filter for high confidence taxonomic assignments by using a 0.80 bootstrap support cutoff for long queries or a 0.50 cutoff for queries shorter than 250 bp as recommended on the RDP Classifier website https://rdp.cme.msu.edu/classifier/classifier.jsp 
+Taxonomic assignments were performed using the Ribosomal Database Project (RDP) Classifier v2.12 (Wang et al., 2007).  The ITS reference set is available with the RDP Classifier and is called with the -g flag.  Read counts from the ESV x sample table were mapped to the RDP classifier taxonomic assignments using add_abundance_to_rdp_out3.plx .  You can filter for high confidence taxonomic assignments by using a 0.80 bootstrap support cutoff for long queries or a 0.50 cutoff for queries shorter than 250 bp as recommended on the RDP Classifier website https://rdp.cme.msu.edu/classifier/classifier.jsp 
 
 ~~~linux
 #Classify the ITS sequences
