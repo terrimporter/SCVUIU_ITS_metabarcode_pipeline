@@ -48,7 +48,7 @@ gz_stats gz > paired.stats
 I used CUTADAPT v1.13 to sequentially remove primers with the default settings except that we required a minimum of 150 bp after primer removal, required a minimum Phred score of 20 at the ends, and allowing a maximum of 3 N's (Martin, 2011).  I run CUTADAPT with GNU parallel using as many cores as possible (Tang, 2011).  The -g flag trims the primer off the 5' end of paired reads. I use default settings but require a minimum length after trimming of at least 150 bp, minimum read quality of Phred 20 at the ends of the sequences, and I allow a maximum of 3 N's. I get read stats by running the gz_stats command described in Part II. The CUTADAPT -a flag trims the primer off the ' end of paired reads and the primer sequence should be reverse-complemented.  CUTADAPT will automatically detect compressed fastq.gz files for reading and will convert these to .fasta.gz files based on the file extensions provided. I get read stats by running the fasta_gz_stats command that calls the run_bash_fasta_gz_stats.sh script. Therein the stats3 command links to the fasta_gz_stats.plx script.
 
 ~~~linux
-ls | grep .fastq | parallel -j 20 "cutadapt -g <INSERT FORWARD PRIMER SEQ> -m 150 -q 20,20 --max-n=3 --discard-untrimmed -o {}.Ftrimmed.fastq.gz {}"
+ls | grep .fastq.gz | parallel -j 20 "cutadapt -g <INSERT FORWARD PRIMER SEQ> -m 150 -q 20,20 --max-n=3 --discard-untrimmed -o {}.Ftrimmed.fastq.gz {}"
 gz_stats gz > Ftrimmed.stats
 ls | grep .Ftrimmed.fastq | parallel -j 20 "cutadapt -a <INSERT REVERSE COMPLEMENTED PRIMER SEQ> -m 150 -q 20,20 --max-n=3 --discard-untrimmed -o {}.Rtrimmed.fasta.gz {}"
 fasta_gz_stats gz > Rtrimmed.stats
