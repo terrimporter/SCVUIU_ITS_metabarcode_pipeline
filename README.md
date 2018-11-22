@@ -87,7 +87,9 @@ ITSx -i cat.denoised -o cat.denoised --cpu 15
 
 ## Part VIII - Taxonomic assignment
 
-Taxonomic assignments were performed using the Ribosomal Database Project (RDP) Classifier v2.12 (Wang et al., 2007).  The ITS reference set is available with the RDP Classifier and is called with the -g flag.  Read counts from the ESV x sample table were mapped to the RDP classifier taxonomic assignments using add_abundance_to_rdp_out3.plx .  You can filter for high confidence taxonomic assignments by using a 0.80 bootstrap support cutoff for long queries or a 0.50 cutoff for queries shorter than 250 bp as recommended on the RDP Classifier website https://rdp.cme.msu.edu/classifier/classifier.jsp 
+Taxonomic assignments were performed using the Ribosomal Database Project (RDP) Classifier v2.12 (Wang et al., 2007).  The ITS reference set is available with the RDP Classifier and is called with the -g flag.  Read counts from the ESV x sample table were mapped to the RDP classifier taxonomic assignments using add_abundance_to_rdp_out4.plx .  I also append the marker/primer name to each GlobalESV id.  This is important if down the line you end up working with multiple markers.
+
+You can filter for high confidence taxonomic assignments by using a 0.80 bootstrap support cutoff for long queries or a 0.50 cutoff for queries shorter than 250 bp as recommended on the RDP Classifier website https://rdp.cme.msu.edu/classifier/classifier.jsp .
 
 ~~~linux
 #Classify the ITS sequences
@@ -95,6 +97,9 @@ java -Xmx8g -jar /path/to/rdp_classifier_2.12/dist/classifier.jar classify -g fu
 
 #Map read counts from OTU table to the RDP taxonomic assignments
 perl add_abundance_to_rdp_out4.plx cat.denoised.table rdp.out
+
+#Prefix each GlobalESV with the marker/primer name
+vi -c "%s/^/Marker_/g" -c "wq" rdp.out
 ~~~
 
 ## Implementation notes
