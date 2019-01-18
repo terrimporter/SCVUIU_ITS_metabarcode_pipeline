@@ -61,7 +61,7 @@ I prepare the files for dereplication by adding sample names parsed from the fil
 ~~~linux
 rename_all_fastas Rtrimmed.fasta.gz
 vi -c "%s/-/_/g" -c "wq" cat.fasta.gz
-vsearch --threads 10 --derep_fulllength cat.fasta --output cat.uniques --sizein --sizeout
+vsearch --threads 10 --derep_fulllength cat.fasta.gz --output cat.uniques --sizein --sizeout
 stats_uniques
 read_count_uniques
 ~~~
