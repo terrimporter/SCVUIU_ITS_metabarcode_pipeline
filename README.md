@@ -95,6 +95,9 @@ You can filter for high confidence taxonomic assignments by using a 0.80 bootstr
 #Classify the ITS sequences
 java -Xmx8g -jar /path/to/rdp_classifier_2.12/dist/classifier.jar classify -g fungalits_unite -o rdp.out cat.denoised.ITS2.fasta
 
+# Edit the headers in the rdp.out file so they match the ones in the cat.denoised.table file
+vi -c "%s/|\w|ITS2//g" -c "wq" rdp.out
+
 #Map read counts from OTU table to the RDP taxonomic assignments
 perl add_abundance_to_rdp_out4.plx cat.denoised.table rdp.out
 
