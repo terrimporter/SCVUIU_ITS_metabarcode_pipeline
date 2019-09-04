@@ -1,5 +1,5 @@
 """ SCVUIU v2 ITS alternate metabarcode pipeline, part 1
-By: Teresita M. Porter
+By: Teresita M. Porter, Sept. 4, 2019
 
 Metabarcode pipeline to process Illumina MiSeq reads run by run when memory requirements become a problem with teh 23-bit USEARCH iunoise3 denoising:
 
