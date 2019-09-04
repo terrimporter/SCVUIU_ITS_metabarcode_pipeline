@@ -93,7 +93,7 @@ USEARCH:
 # Uses the RDP classifier
 
 RDP:
-    jar: "/home/terri/rdp_classifier_2.12/dist/classifier.jar"
+    jar: "/path/to/rdp_classifier_2.12/dist/classifier.jar"
     g: "fungalits_unite"
 
 ############################################################################
