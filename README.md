@@ -1,109 +1,175 @@
 # README
 
-This repository contains an ITS metabarcode pipeline that can be used to process Illumina MiSeq reads.  SCVUIU is an acronym that stands for the names of the programs/algorithms/datasets used here: S = SEQPREP, C = CUTADAPT, V = VSEARCH, U = USEARCH-unoise3, I = ITSx-ITS extractor, U = UNITE ITS reference set used with the RDP classifier.  The dataflow and scripts for the most current release can be downloaded from https://github.com/terrimporter/SCVUIU_ITS_metabarcode_pipeline/releases
+This repository contains an ITS metabarcode pipeline that can be used to process Illumina MiSeq reads.  SCVUIU is an acronym that stands for the names of the programs/algorithms/datasets used here: S = SEQPREP, C = CUTADAPT, V = VSEARCH, U = USEARCH-unoise3, I = ITSx-ITS extractor, U = UNITE ITS reference set used with the RDP classifier.  
+
+This data flow has been developed using a conda environment and snakemake pipeline for improved reproducibility. It will be updated on a regular basis so check for the latest version at https://github.com/terrimporter/SCVUIU_ITS_metabarcode_pipeline/releases
 
 ## Overview
 
-[Part I - Link to raw files](#part-i---link-to-raw-files)  
-[Part II - Forward and reverse read number check](#part-ii---forward-and-reverse-read-number-check)  
-[Part III - Read pairing](#part-iii---read-pairing)  
-[Part IV - Primer trimming](#part-iv---primer-trimming)  
-[Part V - Dereplicate reads](#part-v---dereplicate-reads)  
-[Part VI - Denoising](#part-vi---denoising)  
-[Part VII - Extract ITS2 region](#part-vii---extract-its2-region)  
-[Part VIII - Taxonomic assignment](#part-viii---taxonomic-assignment)  
+[Standard pipeline](#standard-pipeline)  
+
+[Alternate pipeline](#alternate-pipeline)  
 
 [Implementation notes](#implementation-notes)  
+
 [References](#references)  
+
 [Acknowledgements](#acknowledgements)  
 
-## Part I - Link to raw files
+## Standard pipeline
 
-This pipeline is meant to process Illumina paired-end reads from COI metabarcoding. To save space in my directory, I create symbolic links to the raw .gz files. The command linkfiles calls the script link_files.sh
+### Overview of the standard pipeline
 
-~~~linux
-linkfiles
-~~~
+If you are comfortable reading code, read through the snakefile to see how the pipeline runs, and which programs and versions are used.
 
-## Part II - Forward and reverse read number check
+#### A brief overview:
 
-I make sure that the number of reads in the forward R1 files are the same as those in the reverwe R2 files. The command gz_stats calls the script run_bash_fastq_gz_stats.sh. Therein the stats2 command links to the fastq_gz_stats.plx script. The filename suffix that targets R1 and R2 files needs to be supplied as an argument.
+Raw paired-end reads are merged using SEQPREP v1.3.2 from bioconda (St. John, 2016).  This step looks for a minimum Phred quality score of 20 in the overlap region, requires at least 25bp overlap.
 
-~~~linux
-gz_stats R1.fq.gz > R1.stats
-gz_stats R2.fz.gz > R2.stats
-~~~
+Primers are trimmed in two steps using CUTADAPT v2.4 from bioconda (Martin, 2011).  This step looks for a minimum Phred quality score of at least 20 at the ends, forward primer is trimmed first, no more than 3 N's allowed, trimmed reads need to be at least 150 bp, untrimmed reads are discarded.  The output from the first step, is used as in put for the second step.  This step looks for a minimum Phred quality score of at least 20 at the ends, the reverse primer is trimmed, no more than 3 N's allowed, trimmed reads need to be at least 150 bp, untrimmed reads are discarded.
 
-## Part III - Read pairing
+Files are reformatted and samples are combined for a global analysis.
 
-I use SEQPREP (available from https://github.com/jstjohn/SeqPrep ) to pair forward and reverse reads using the default settings except that we required a minimum Phred score of 20 at the ends and a minimum overlap of 25 bp.  The command pair runs the script runseqprep_gz.sh .   I check the read stats by running the gz_stats command described in Part II.
+Reads are dereplicated (only unique sequences are retained) using VSEARCH v2.13.6 from bioconda (Rognes et al., 2016).
 
-~~~linux
-pair _R1.fq.gz _R2.fq.gz
-gz_stats gz > paired.stats
-~~~
+Denoised exact sequence variants (ESVs) are generated using USEARCH v11.0.667 with the unoise3 algorithm (Edgar, 2016).  This step removes any PhiX contamination, putative chimeric sequences, sequences with predicted errors, and rare sequences.  This step produces zero-radius OTUs (Zotus) also referred to commonly as amplicon sequence variants (ASVs), ESVs, or 100% operational taxonomic unit (OTU) clusters.  Here, we define rare sequences to be sequence clusters containing only one or two reads (singletons and doubletons) and these are removed as 'noise'.
 
-## Part IV - Primer trimming
+An ESV table that tracks read number for each ESV in each sample is generated with VSEARCH.
 
-I used CUTADAPT v1.18 to sequentially remove primers with the default settings except that we required a minimum of 150 bp after primer removal, required a minimum Phred score of 20 at the ends, and allowing a maximum of 3 N's (Martin, 2011).  I run CUTADAPT with GNU parallel using as many cores as possible (Tang, 2011).  The -g flag trims the primer off the 5' end of paired reads. I use default settings but require a minimum length after trimming of at least 150 bp, minimum read quality of Phred 20 at the ends of the sequences, and I allow a maximum of 3 N's. I get read stats by running the gz_stats command described in Part II. The CUTADAPT -a flag trims the primer off the 3' end of paired reads and the primer sequence should be reverse-complemented.  CUTADAPT will automatically detect compressed fastq.gz files for reading and will convert these to .fasta.gz files based on the file extensions provided. I get read stats by running the fasta_gz_stats command that calls the run_bash_fasta_gz_stats.sh script. Therein the stats3 command links to the fasta_gz_stats.plx script.
+ITS taxonomic assignments are made using the Ribosomal Database classifier v2.12 (RDP classifier) available from https://sourceforge.net/projects/rdp-classifier/ (Wang et al., 2007) using the ITS-UNITE reference dataset that comes with the classifier.
 
-~~~linux
-ls | grep .fastq.gz | parallel -j 20 "cutadapt -g <INSERT FORWARD PRIMER SEQ> -m 150 -q 20,20 --max-n=3 --discard-untrimmed -o {}.Ftrimmed.fastq.gz {}"
-gz_stats gz > Ftrimmed.stats
-ls | grep .Ftrimmed.fastq | parallel -j 20 "cutadapt -a <INSERT REVERSE COMPLEMENTED PRIMER SEQ> -m 150 -q 20,20 --max-n=3 --discard-untrimmed -o {}.Rtrimmed.fasta.gz {}"
-fasta_gz_stats gz > Rtrimmed.stats
-~~~
+Conserved rRNA gene regions (LSU, 5.8S, or SSU) are removed using the ITSx extractor, isolating the internal transcribed DNA spacer regions (ITS1 and/or ITS2) for subsequent taxonomic assignment (Bengtsson-Palme et al., 2013).
 
-## Part V - Dereplicate reads
+The final output is reformatted to add read numbers for each sample, and column headers to improve readability, and reformats the ESV ids so they match those in the ESV table.
 
-I prepare the files for dereplication by adding sample names parsed from the filenames to the fasta headers using the rename_all_fastas command that calls the run_rename_fasta.sh. Therein the rename_fasta command calls the rename_fasta_gzip.plx script. The results are concatenated and compressed. The outfile is cat.fasta.gz . I change all dashes with underscores in the fasta files using vi. This large file is dereplicated with VSEARCHv2.9.1 (Rognes et al., 2016). I use the default settings with the --sizein --sizeout flags to track the number of reads in each cluster. I get read stats on the unique sequences using the stats_uniques command that calls the run_fastastats_parallel_uniques.sh script. Therein the stats command links to fasta_stats_parallel.plx . I count the total number of reads that were processed using the read_count_uniques command that calls the get_read_counts_uniques.sh script.
+Read and ESV statistics are provided for various steps of the program are also provided.
 
-~~~linux
-rename_all_fastas Rtrimmed.fasta.gz
-vi -c "%s/-/_/g" -c "wq" cat.fasta.gz
-vsearch --threads 10 --derep_fulllength cat.fasta.gz --output cat.uniques --sizein --sizeout
-stats_uniques
-read_count_uniques
-~~~
+### Prepare your environment to run the pipeline
 
-## Part VI - Denoising
+1. This pipeline includes a conda environment that provides most of the programs needed to run this pipeline (SNAKEMAKE, SEQPREP, CUTADAPT, VSEARCH, etc.).
 
-I denoise the reads using USEARCH v10.0.240 with the UNOISE3 algorithm (Edgar, 2016). With this program, denoising involves correcting sequences with putative sequencing errors, removing PhiX and putative chimeric sequences, as well as low frequency reads (just singletons and doubletons here). This step can take quite a while to run for large files and I like to submit as a job on its own or use linux screen when working interactively so that I can detach the screen. To account for a bug in USEARCH10, the automatically generated 'Zotu' in the FASTA header needs to be changed to 'Otu' for the ESV/OTU table to be generated correctly in the next step. I get ESV stats using stats_denoised that links to run_fastastats_parallel_denoised.sh. Therein the command stats links to fasta_stats_parallel.plx . I generate an ESV/OTU table using VSEARCH by mapping the primer-trimmed reads in cat.fasta to the ESVs in cat.denoised using an identity cutoff of 1.0 .
+```linux
+# Create the environment from the provided environment.yml file
+conda env create -f environment.yml
 
-~~~linux
-usearch10 -unoise3 cat.uniques -zotus cat.denoised -minsize 3 > log
-vi -c "%s/>Zotu/>Otu/g" -c "wq" cat.denoised
-stats_denoised
-vsearch  --usearch_global cat.fasta.gz --db cat.denoised --id 1.0 --otutabout cat.fasta.table --threads 20
-~~~
+# Activate the environment
+conda activate myenv
+```
+2. The pipeline requires commercial software for the denoising step.  A free 32-bit version of USEARCH v11.0.667 can be obtained from https://drive5.com/usearch/download.html .  Be sure to put the program in your PATH, ex. ~/bin .  Make it executable and rename it to simply usearch11.
 
-## Part VII - Extract ITS2 region
+```linux
+mv usearch11.0.667_i86linux32 ~/bin/.
+cd ~/bin
+chmod 755 usearch11.0.667_i86linux32
+mv usearch11.0.667_i86linux32 usearch11
+```
 
-The leading and trailing regions of the ITS2 region are retrieved using the ITSx v1.0.11 program available from http://microbiology.se/software/itsx/ (Bengtsson-Palme et al., 2013).  Be sure to adjust the --cpu flag according to how many cpus you want to use.
+3. The pipeline also requires the RDP classifier for the taxonomic assignment step.  Although the RDP classifier v2.2 is available through conda, a newer v2.12 is available form SourceForge at https://sourceforge.net/projects/rdp-classifier/ .  Download it and take note of where the classifier.jar file is as this needs to be added to config.yaml .
 
-~~~linux
-ITSx -i cat.denoised -o cat.denoised --cpu 15
-~~~
+The RDP classifier comes with the training sets to classify fungal ITS sequences.
 
-## Part VIII - Taxonomic assignment
+```linux
+RDP:
+    jar: "/path/to/rdp_classifier_2.12/dist/classifier.jar"
+    g: "fungalits_unite"
+```
 
-Taxonomic assignments were performed using the Ribosomal Database Project (RDP) Classifier v2.12 (Wang et al., 2007).  The ITS reference set is available with the RDP Classifier and is called with the -g flag.  Read counts from the ESV x sample table were mapped to the RDP classifier taxonomic assignments using add_abundance_to_rdp_out4.plx .  I also append the marker/primer name to each GlobalESV id.  This is important if down the line you end up working with multiple markers.
+4. In most cases, your raw paired-end Illumina reads can go into a directory called 'data' which should be placed in the same directory as the other files that come with this pipeline.
 
-You can filter for high confidence taxonomic assignments by using a 0.80 bootstrap support cutoff for long queries or a 0.50 cutoff for queries shorter than 250 bp as recommended on the RDP Classifier website https://rdp.cme.msu.edu/classifier/classifier.jsp .
+```linux
+# Create a new directory to hold your raw data
+mkdir data
+```
 
-~~~linux
-#Classify the ITS sequences
-java -Xmx8g -jar /path/to/rdp_classifier_2.12/dist/classifier.jar classify -g fungalits_unite -o rdp.out cat.denoised.ITS2.fasta
+5. Please go through the config.yaml file and edit directory names, filename patterns, etc. as necessary to work with your filenames.
 
-# Edit the headers in the rdp.out file so they match the ones in the cat.denoised.table file
-vi -c "%s/|\w|ITS2//g" -c "wq" rdp.out
+6. Be sure to edit the first line of each Perl script (shebang) in the perl_scripts directory to point to where Perl is installed.
 
-#Map read counts from OTU table to the RDP taxonomic assignments
-perl add_abundance_to_rdp_out4.plx cat.denoised.table rdp.out
+```linux
+# The usual shebang if you already have Perl installed
+#!/usr/bin/perl
 
-#Prefix each GlobalESV with the marker/primer name
-vi -c "%s/^/Marker_/g" -c "wq" rdp.out
-~~~
+# Alternate shebang if you want to run perl using the conda environment (edit this)
+#!/path/to/miniconda3/envs/myenv/bin/perl
+```
+
+### Run the standard pipeline
+
+Run snakemake by indicating the number of jobs or cores that are available to run the whole pipeline.  
+
+```linux
+snakemake --jobs 24 --snakefile snakefile --configfile config.yaml
+```
+
+When you are done, deactivate the conda environment:
+
+```linux
+conda deactivate
+```
+
+## Alternate pipeline
+
+This section describes modification to the standard pipeline described above when you get a message from 32-bit USEARCH that you have exceeded memory availble.  Instead of processing all the reads in one go, you can denoise each run on its own to keep file sizes small.
+
+1. Instead of putting all raw read files in a directory called 'data', put them in their own directories according to run, ex. run1.  Edit the 'dir' variable in the config_alt_1.yaml file as follows:
+
+```linux
+raw: "run1"
+```
+
+2. The output directory also needs to be edited in the config_alt_1.yaml file:
+
+```linux
+dir: "run1_out"
+```
+
+3. Please go through the config_alt_1.yaml file and edit directory names, filename patterns, etc. as necessary to work with your filenames.
+
+4. Run snakemake with the first alternate snakefile as follows, be sure to indicate the number of jobs/cores available to run the whole pipeline.
+
+```linux
+snakemake --jobs 24 --snakefile snakefile_alt_1 --configfile config_alt.yaml
+```
+
+5. Run steps 1-4 for each run directory, ex. run1, run2, run3, etc.
+
+6. Combine and dereplicate the denoised ESVs from each run and put them in a directory named after the amplicon, for example:
+
+```linux
+# Make new directory
+mkdir ITS2
+
+# Combine the denoised ESVs from each run
+cat run1_out/cat.denoised run2_out/cat.denoised run3_out/cat.denoised > ITS2/cat.denoised.tmp
+
+# Dereplicate the denoised ESVs
+vsearch --derep_fulllength ITS2/cat.denoised.tmp --output ITS2/cat.denoised --sizein --sizeout --log ITS2/derep.log
+```
+
+7. Combine the primer trimmed reads frmo each run and put them in a directory named after the amplicon, for example:
+
+```linux
+# Combine the primer trimmed reads from each run
+cat run1_out/cat.fasta2.gz run2_out/cat.fasta2.gz run3_out/cat.fasta2.gz > ITS2/cat.fasta2.gz
+```
+
+7. Edit the config.yaml 'dir' variable:
+
+```linux
+dir: "ITS2"
+```
+
+8. Continue with the second alternate snakelake pipeline, be sure to edit the number of jobs/cores available to run the whole pipeline.
+
+```linux
+snakemake --jobs 24 --snakefile snakefile_alt_2 --configfile config.yaml
+```
+
+9. When you are done, deactivate the conda environment:
+
+```linux
+conda deactivate
+```
 
 ## Implementation notes
 
@@ -140,4 +206,4 @@ Wang, Q., Garrity, G. M., Tiedje, J. M., & Cole, J. R. (2007). Naive Bayesian Cl
 
 ## Acknowledgements
 
-I would like to acknowledge funding from the Government of Canada through the Genomics Research and Development Initiative, EcoBiomcis Project.
+I would like to acknowledge funding from the Government of Canada through the Genomics Research and Development Initiative, Ecobiomcis Project.
