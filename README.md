@@ -150,13 +150,15 @@ vsearch --derep_fulllength ITS2/cat.denoised.tmp --output ITS2/cat.denoised --si
 
 ```linux
 # Combine the primer trimmed reads from each run
-cat run1_out/cat.fasta2.gz run2_out/cat.fasta2.gz run3_out/cat.fasta2.gz > ITS2/cat.fasta2.gz
+cat run1_out/cat.fasta.gz run2_out/cat.fasta.gz run3_out/cat.fasta.gz > ITS2/cat.fasta.gz
 ```
 
-7. Edit the config.yaml 'dir' variable:
+7. Edit the config.yaml 'dir' variable and the 'SED' variable, leave the rest of the variables as is (most of them won't be used here anyways):
 
 ```linux
 dir: "ITS2"
+...
+SED: 's/^/ITS2_/g'
 ```
 
 8. Continue with the second alternate snakelake pipeline, be sure to edit the number of jobs/cores available to run the whole pipeline.
