@@ -16,7 +16,7 @@ This is the continuation of the first part of the alternate meteabarcode pipelin
 dir=config["dir"]
 
 # Primer trimmed reads
-gzip_out=dir+"/cat.fasta2.gz"
+gzip_out=dir+"/cat.fasta.gz"
 
 # Denoised ESVs
 usearch_out=dir+"/cat.denoised"
