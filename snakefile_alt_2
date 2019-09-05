@@ -1,5 +1,4 @@
 """ SCVUIU v2 ITS alternate metabarcode pipeline, part 2
-By: Teresita M. Porter, Sept. 4, 2019
 
 This is the continuation of the first part of the alternate meteabarcode pipeline:
 6_Create ESV table
@@ -100,7 +99,7 @@ rule taxonomic_assignment:
 	output:
 		temp(rdp_out)
 	shell:
-		"java -Xmx8g -jar {config[RDP][jar]} classify -t {config[RDP][t]} -o {output} {input}"
+		"java -Xmx8g -jar {config[RDP][jar]} classify -g {config[RDP][g]} -o {output} {input}"
 
 #######################################################################
 # Reformat Zotu field to match ESV table
