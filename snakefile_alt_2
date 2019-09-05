@@ -110,7 +110,7 @@ rule reformat_zotu_field:
 	output:
 		temp(rdp_out2)
 	shell:
-		"sed -e 's/|[a-zA-Z]|ITS2//g' {input} >> {output}"
+		"sed -e 's/;size=[[:digit:]]\+;|[a-zA-Z]|ITS2//g' {input} >> {output}"
 
 #######################################################################
 # Map read number
