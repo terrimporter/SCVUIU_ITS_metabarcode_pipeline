@@ -38,7 +38,7 @@ An ESV table that tracks read number for each ESV in each sample is generated wi
 
 ITS taxonomic assignments are made using the Ribosomal Database classifier v2.12 (RDP classifier) available from https://sourceforge.net/projects/rdp-classifier/ (Wang et al., 2007) using the ITS-UNITE reference dataset that comes with the classifier.
 
-Conserved rRNA gene regions (LSU, 5.8S, or SSU) are removed using the ITSx extractor, isolating the internal transcribed DNA spacer regions (ITS1 and/or ITS2) for subsequent taxonomic assignment (Bengtsson-Palme et al., 2013).
+Conserved rRNA gene regions (LSU, 5.8S, or SSU) are removed using the ITSx extractor v1.1b, isolating the internal transcribed DNA spacer regions (ITS1 and/or ITS2) for subsequent taxonomic assignment (Bengtsson-Palme et al., 2013).
 
 The final output is reformatted to add read numbers for each sample, and column headers to improve readability, and reformats the ESV ids so they match those in the ESV table.
 
