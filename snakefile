@@ -1,5 +1,5 @@
 """ SCVUIU v2 ITS metabarcode pipeline
-By: Teresita M. Porter, Sept. 4, 2019
+By: Teresita M. Porter, Oct. 29, 2019
 
 Metabarcode pipeline to process Illumina MiSeq reads as follows:
 
@@ -33,28 +33,31 @@ raw_sample_forward_wildcard=config["raw_sample_forward_wildcard"]
 
 #ITS2
 dir=config["dir"]
-stats_out="{sample}.stats"
-raw1_stats_out=dir+"/stats/R1/"+stats_out
+R1stats_out="{sample}.R1stats"
+raw1_stats_out=dir+"/stats/"+R1stats_out
 cat_raw1_stats_out=dir+"/stats/R1.stats"
 
 raw_sample_reverse_wildcard=config["raw_sample_reverse_wildcard"]
-raw2_stats_out=dir+"/stats/R2/"+stats_out
+R2stats_out="{sample}.R2stats"
+raw2_stats_out=dir+"/stats/"+R2stats_out
 cat_raw2_stats_out=dir+"/stats/R2.stats"
 
-#dir=config["dir"]
 fastq_gz="{sample}.fastq.gz"
 seqprep_out=dir+"/paired/"+fastq_gz
-paired_stats_out=dir+"/stats/paired/"+stats_out
+Pstats_out="{sample}.Pstats"
+paired_stats_out=dir+"/stats/"+Pstats_out
 cat_paired_stats_out=dir+"/stats/paired.stats"
 
 # 2_Trim reads
 cutadapt_f_out=dir+"/Fprimer_trimmed/"+fastq_gz
-Ftrimmed_stats_out=dir+"/stats/Ftrimmed/"+stats_out
+Fstats_out="{sample}.Fstats"
+Ftrimmed_stats_out=dir+"/stats/"+Fstats_out
 cat_Ftrimmed_stats_out=dir+"/stats/Ftrimmed.stats"
 
 fasta_gz="{sample}.fasta.gz"
 cutadapt_r_out=dir+"/Rprimer_trimmed/"+fasta_gz
-Rtrimmed_stats_out=dir+"/stats/Rtrimmed/"+stats_out
+Rstats_out="{sample}.Rstats"
+Rtrimmed_stats_out=dir+"/stats/"+Rstats_out
 cat_Rtrimmed_stats_out=dir+"/stats/Rtrimmed.stats"
 
 # 3_Concatenate samples for global analysis
@@ -116,7 +119,7 @@ rule all:
 #		expand(Rtrimmed_stats_out, sample=SAMPLES_UNIQUE),
 		cat_Rtrimmed_stats_out,
 		# 2_Trim reads (edit fasta header)
-#		expand(concatenate_pattern, sample=SAMPLES)
+#		expand(concatenate_pattern, sample=SAMPLES_UNIQUE)
 		# 3_Concatenate samples for global analysis
 #		output
 		# 3_Concatenate samples for global analysis (edit fasta header)
@@ -149,7 +152,7 @@ rule raw1_stats:
 	input: 
 		raw_sample_forward_wildcard
 	output:
-		raw1_stats_out
+		temp(raw1_stats_out)
 	shell:
 		"perl perl_scripts/fastq_gz_stats.plx {input} >> {output}"
 
@@ -173,7 +176,7 @@ rule raw2_stats:
 	input: 
 		raw_sample_reverse_wildcard
 	output:
-		raw2_stats_out
+		temp(raw2_stats_out)
 	shell:
 		"perl perl_scripts/fastq_gz_stats.plx {input} >> {output}"
 
@@ -212,7 +215,7 @@ rule paired_stats:
 	input: 
 		seqprep_out
 	output:
-		paired_stats_out
+		temp(paired_stats_out)
 	shell:
 		"perl perl_scripts/fastq_gz_stats.plx {input} >> {output}"
 
@@ -248,7 +251,7 @@ rule Ftrimmed_stats:
 	input: 
 		cutadapt_f_out
 	output:
-		Ftrimmed_stats_out
+		temp(Ftrimmed_stats_out)
 	shell:
 		"perl perl_scripts/fastq_gz_stats.plx {input} >> {output}"
 
@@ -284,7 +287,7 @@ rule Rtrimmed_stats:
 	input: 
 		cutadapt_r_out
 	output:
-		Rtrimmed_stats_out
+		temp(Rtrimmed_stats_out)
 	shell:
 		"perl perl_scripts/fasta_gz_stats.plx {input} >> {output}"
 
