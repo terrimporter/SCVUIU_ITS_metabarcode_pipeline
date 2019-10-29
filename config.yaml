@@ -1,7 +1,7 @@
 # Configuration file for SCVUIUv2
 
 # Author: Teresita M. Porter
-# Date: Aug. 23, 2019
+# Date: Oct. 29, 2019
 
 ############################################################################
 # General pipeline settings
@@ -93,7 +93,7 @@ USEARCH:
 # Uses the RDP classifier
 
 RDP:
-    jar: "/home/terri/rdp_classifier_2.12/dist/classifier.jar"
+    jar: "/path/to/rdp_classifier_2.12/dist/classifier.jar"
     g: "fungalits_unite"
 
 ############################################################################
