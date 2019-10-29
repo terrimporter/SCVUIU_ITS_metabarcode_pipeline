@@ -290,7 +290,7 @@ rule edit_fasta_header1:
 
 rule concatenate:
 	input:
-		expand(concatenate_pattern, sample=SAMPLES)
+		expand(concatenate_pattern, sample=SAMPLES_UNIQUE)
 	output:
 		temp(output)
 	threads: 1
