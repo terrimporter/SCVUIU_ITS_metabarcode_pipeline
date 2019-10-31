@@ -204,7 +204,7 @@ rule cat_paired_stats:
 # Trim forward primer with CUTADAPT
 
 rule trim_forward_primer:
-	version: "2.4"
+	version: "2.6"
 	input:
 		seqprep_out
 	output:
@@ -240,7 +240,7 @@ rule cat_Ftrimmed_stats:
 # Trim reverse primer with CUTADAPT
 
 rule trim_reverse_primer:
-	version: "2.4"
+	version: "2.6"
 	input:
 		cutadapt_f_out
 	output:
@@ -330,10 +330,9 @@ rule dereplicate:
 		gzip_out
 	output:
 		vsearch_out
-	threads: config["VSEARCH"]["t"]
 	log: vsearch_log
 	shell:
-		"vsearch --threads {threads} --derep_fulllength {input} --output {output} --sizein --sizeout --log {log}"
+		"vsearch --derep_fulllength {input} --output {output} --sizein --sizeout --log {log}"
 	
 #######################################################################
 # Denoise with USEARCH
