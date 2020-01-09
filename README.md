@@ -1,6 +1,6 @@
 # README
 
-This repository contains an ITS metabarcode pipeline that can be used to process Illumina MiSeq reads.  **SCVUIU** is an acronym that stands for the names of the programs/algorithms/datasets used here: **S**EQPREP, **C**UTADAPT, **V**SEARCH, **U**unoise3, **I**TSx-ITS extractor, **U**NITE ITS reference set used with the RDP classifier.  
+This repository contains an ITS metabarcode pipeline that can be used to process Illumina MiSeq reads.  **SCVUIU** is an acronym that stands for the names of the programs/algorithms/datasets used here: **S**EQPREP, **C**UTADAPT, **V**SEARCH, **U**noise3, **I**TSx-ITS extractor, **U**NITE ITS reference set used with the RDP classifier.  
 
 ## Overview 
 
