@@ -1,14 +1,16 @@
 # README
 
-This repository contains an ITS metabarcode pipeline that can be used to process Illumina MiSeq reads.  SCVUIU is an acronym that stands for the names of the programs/algorithms/datasets used here: S = SEQPREP, C = CUTADAPT, V = VSEARCH, U = USEARCH-unoise3, I = ITSx-ITS extractor, U = UNITE ITS reference set used with the RDP classifier.  
+This repository contains an ITS metabarcode pipeline that can be used to process Illumina MiSeq reads.  **SCVUIU** is an acronym that stands for the names of the programs/algorithms/datasets used here: **S**EQPREP, **C**UTADAPT, **V**SEARCH, **U**unoise3, **I**TSx-ITS extractor, **U**NITE ITS reference set used with the RDP classifier.  
+
+## Overview 
+
+This pipeline begins with raw paired-end Illumina MiSeq fastq.gz files.  Reads are paired.  Primers are trimmed.  All the samples are pooled for a global analysis.  Reads are dereplicated and denoised producing a reference set of exact sequence variants (ESVs).  The rRNA gene regions flanking the internal transcribed spacer region are removed.  These ESVs are taxonomically assigned using an ITS reference set available with the RDP Classifier (Wang et al., 2007) available from https://sourceforge.net/projects/rdp-classifier/ .
 
 This data flow has been developed using a conda environment and snakemake pipeline for improved reproducibility. It will be updated on a regular basis so check for the latest version at https://github.com/terrimporter/SCVUIU_ITS_metabarcode_pipeline/releases
 
-## Overview
+## Outline
 
 [Standard pipeline](#standard-pipeline)  
-
-[Alternate pipeline](#alternate-pipeline)  
 
 [Implementation notes](#implementation-notes)  
 
@@ -16,13 +18,9 @@ This data flow has been developed using a conda environment and snakemake pipeli
 
 [Acknowledgements](#acknowledgements)  
 
-## Standard pipeline
-
-### Overview of the standard pipeline
+## Pipeline details
 
 If you are comfortable reading code, read through the snakefile to see how the pipeline runs, and which programs and versions are used.
-
-#### A brief overview:
 
 Raw paired-end reads are merged using SEQPREP v1.3.2 from bioconda (St. John, 2016).  This step looks for a minimum Phred quality score of 20 in the overlap region, requires at least 25bp overlap.
 
@@ -32,11 +30,11 @@ Files are reformatted and samples are combined for a global analysis.
 
 Reads are dereplicated (only unique sequences are retained) using VSEARCH v2.13.6 from bioconda (Rognes et al., 2016).
 
-Denoised exact sequence variants (ESVs) are generated using USEARCH v11.0.667 with the unoise3 algorithm (Edgar, 2016).  This step removes any PhiX contamination, putative chimeric sequences, sequences with predicted errors, and rare sequences.  This step produces zero-radius OTUs (Zotus) also referred to commonly as amplicon sequence variants (ASVs), ESVs, or 100% operational taxonomic unit (OTU) clusters.  Here, we define rare sequences to be sequence clusters containing only one or two reads (singletons and doubletons) and these are removed as 'noise'.
+Denoised exact sequence variants (ESVs) are generated using VSEARCH with the unoise3 algorithm (Edgar, 2016).  This step removes any PhiX contamination, sequences with predicted errors, and rare sequences.  This step also produces zero-radius OTUs (Zotus) also referred to commonly as amplicon sequence variants (ASVs), ESVs, or 100% operational taxonomic unit (OTU) clusters.  Here, we define rare sequences to be sequence clusters containing only one or two reads (singletons and doubletons) and these are removed as 'noise'.  Putative chimeric sequences are then removed using the uchime3_denovo algorithm in VSEARCH.
 
 An ESV table that tracks read number for each ESV in each sample is generated with VSEARCH.
 
-Conserved rRNA gene regions (LSU, 5.8S, or SSU) are removed using the ITSx extractor v1.1b, isolating the internal transcribed DNA spacer regions (ITS1 and/or ITS2) for subsequent taxonomic assignment (Bengtsson-Palme et al., 2013).
+Conserved rRNA gene regions (LSU, 5.8S, or SSU) are removed using the ITSx extractor v1.1b1, isolating the internal transcribed DNA spacer regions (ITS1 and/or ITS2) for subsequent taxonomic assignment (Bengtsson-Palme et al., 2013).
 
 ITS taxonomic assignments are made using the Ribosomal Database classifier v2.12 (RDP classifier) available from https://sourceforge.net/projects/rdp-classifier/ (Wang et al., 2007) using the ITS-UNITE reference dataset that comes with the classifier.
 
@@ -53,18 +51,10 @@ Read and ESV statistics are provided for various steps of the program are also p
 conda env create -f environment.yml
 
 # Activate the environment
-conda activate myenv
-```
-2. The pipeline requires commercial software for the denoising step.  A free 32-bit version of USEARCH v11.0.667 can be obtained from https://drive5.com/usearch/download.html .  Be sure to put the program in your PATH, ex. ~/bin .  Make it executable and rename it to simply usearch11.
-
-```linux
-mv usearch11.0.667_i86linux32 ~/bin/.
-cd ~/bin
-chmod 755 usearch11.0.667_i86linux32
-mv usearch11.0.667_i86linux32 usearch11
+conda activate myenv.3
 ```
 
-3. The pipeline also requires the RDP classifier for the taxonomic assignment step.  Although the RDP classifier v2.2 is available through conda, a newer v2.12 is available form SourceForge at https://sourceforge.net/projects/rdp-classifier/ .  Download it and take note of where the classifier.jar file is as this needs to be added to config.yaml .
+2. The pipeline also requires the RDP classifier for the taxonomic assignment step.  Although the RDP classifier v2.2 is available through conda, a newer v2.12 is available form SourceForge at https://sourceforge.net/projects/rdp-classifier/ .  Download it and take note of where the classifier.jar file is as this needs to be added to config.yaml .
 
 The RDP classifier comes with the training sets to classify fungal ITS sequences.
 
@@ -74,26 +64,26 @@ RDP:
     g: "fungalits_unite"
 ```
 
-4. In most cases, your raw paired-end Illumina reads can go into a directory called 'data' which should be placed in the same directory as the other files that come with this pipeline.
+3. In most cases, your raw paired-end Illumina reads can go into a directory called 'data' which should be placed in the same directory as the other files that come with this pipeline.
 
 ```linux
 # Create a new directory to hold your raw data
 mkdir data
 ```
 
-5. Please go through the config.yaml file and edit directory names, filename patterns, etc. as necessary to work with your filenames.
+4. Please go through the config.yaml file and edit directory names, filename patterns, etc. as necessary to work with your filenames.
 
-6. Be sure to edit the first line of each Perl script (shebang) in the perl_scripts directory to point to where Perl is installed.
+5. Be sure to edit the first line of each Perl script (shebang) in the perl_scripts directory to point to where Perl is installed.
 
 ```linux
 # The usual shebang if you already have Perl installed
 #!/usr/bin/perl
 
 # Alternate shebang if you want to run perl using the conda environment (edit this)
-#!/path/to/miniconda3/envs/myenv/bin/perl
+#!/path/to/miniconda3/envs/myenv.3/bin/perl
 ```
 
-### Run the standard pipeline
+### Run the pipeline
 
 Run snakemake by indicating the number of jobs or cores that are available to run the whole pipeline.  
 
@@ -107,95 +97,71 @@ When you are done, deactivate the conda environment:
 conda deactivate
 ```
 
-## Alternate pipeline
-
-This section describes modification to the standard pipeline described above when you get a message from 32-bit USEARCH that you have exceeded memory availble.  Instead of processing all the reads in one go, you can denoise each run on its own to keep file sizes small.
-
-1. Instead of putting all raw read files in a directory called 'data', put them in their own directories according to run, ex. run1.  Edit the 'dir' variable in the config_alt_1.yaml file as follows:
-
-```linux
-raw: "run1"
-```
-
-2. The output directory also needs to be edited in the config_alt_1.yaml file:
-
-```linux
-dir: "run1_out"
-```
-
-3. Please go through the config_alt_1.yaml file and edit directory names, filename patterns, etc. as necessary to work with your filenames.
-
-4. Run snakemake with the first alternate snakefile as follows, be sure to indicate the number of jobs/cores available to run the whole pipeline.
-
-```linux
-snakemake --jobs 24 --snakefile snakefile_alt_1 --configfile config_alt.yaml
-```
-
-5. Run steps 1-4 for each run directory, ex. run1, run2, run3, etc.
-
-6. Combine and dereplicate the denoised ESVs from each run and put them in a directory named after the amplicon, for example:
-
-```linux
-# Make new directory
-mkdir ITS2
-
-# Add version number to denoised sequence headers to keep them unique after denoised data from each run is combined
-sed 's/>Zotu[[:digit:]]\{1,6\}/&.1/g' run1_out/cat.denoised > run1_out/cat.denoised1
-sed 's/>Zotu[[:digit:]]\{1,6\}/&.2/g' run2_out/cat.denoised > run2_out/cat.denoised2
-sed 's/>Zotu[[:digit:]]\{1,6\}/&.3/g' run3_out/cat.denoised > run3_out/cat.denoised3
-
-# Combine the denoised ESVs from each run
-cat run1_out/cat.denoised run2_out/cat.denoised run3_out/cat.denoised > ITS2/cat.denoised.tmp
-
-# Dereplicate the denoised ESVs
-vsearch --derep_fulllength ITS2/cat.denoised.tmp --output ITS2/cat.denoised --sizein --sizeout --log ITS2/derep.log
-```
-
-7. Combine the primer trimmed reads frmo each run and put them in a directory named after the amplicon, for example:
-
-```linux
-# Combine the primer trimmed reads from each run
-cat run1_out/cat.fasta.gz run2_out/cat.fasta.gz run3_out/cat.fasta.gz > ITS2/cat.fasta.gz
-```
-
-7. Edit the config.yaml 'dir' variable and the 'SED' variable, leave the rest of the variables as is (most of them won't be used here anyways):
-
-```linux
-dir: "ITS2"
-...
-SED: 's/^/ITS2_/g'
-```
-
-8. Continue with the second alternate snakelake pipeline, be sure to edit the number of jobs/cores available to run the whole pipeline.
-
-```linux
-snakemake --jobs 24 --snakefile snakefile_alt_2 --configfile config.yaml
-```
-
-9. When you are done, deactivate the conda environment:
-
-```linux
-conda deactivate
-```
-
 ## Implementation notes
 
-Shell scripts are written for Bash. Other scripts are written in Perl and may require additional libraries that are indicated near the top of the script when needed and these can be obtained from CPAN.
+### Installing Conda and Snakemake
 
-To keep the dataflow here as clear as possible, I have ommitted file renaming and clean-up steps.  I also use shortcuts to link to scripts as described above in numerous places.  This is only helpful if you will be running this pipeline often.  I describe, in general, how I like to do this here:
+Conda is an open source package and envirobnment management system.  Miniconda is a lightweight version of conda that only contains conda, python, and their dependencies.  Using conda and the environment.yml file provided here can help get all the necessary programs in one place to run this pipeline.  Snakemake is a Python-based workflow management tool meant to define the rules for running this bioinformatic pipeline.  There is no need to edit the snakefile or snakefile_alt files directly.  Changes to select parameters can be made in the config.yaml pipeline.  If you install Conda and activate the environment provided, then you will also get the correct versions of the open source programs used in this pipeline including Snakemake v3.13.3.
 
-### File clean-up
+Install miniconda as follows:
 
-At every step, I place outfiles into their own directory, then cd into that directory.  I also delete any extraneous outfiles that may have been generated but are not used in subsequent steps to save disk space.
+```linux
+# Download miniconda3
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+
+# Install miniconda3
+sh Miniconda3-latest-Linux-x86_64.sh
+
+# Add conda to your PATH, ex. to ~/bin
+cd ~/bin
+ln -s miniconda3/bin/conda conda
+```
+
+### Check program versions
+
+Ensure that the correct programs from the environment are being used.
+
+```linux
+# create conda environment from file
+conda env create -f environment.yml
+
+# activate the environment
+conda activate myenv
+
+# list all programs available in the environment at once
+conda list > programs.list
+
+# or, inidivdually check that key programs in the conda environment are being used
+which SeqPrep
+which cutadapt
+which vsearch
+which perl
+
+# then, check their version numbers one at a time
+cutadapt --version
+vsearch --version
+```
+
+Version numbers are also tracked in the snakefile.
+
+Note that commercial software (ex. USEARCH) and programs not available from conda need to be installed on your system and executable in your PATH (see [Standard pipeline](#standard-pipeline) "Prepare your environment to run the pipeline").
+
+### Batch renaming of files
+
+Sometimes it is necessary to rename large numbers of sequence files.  I prefer to use Perl-rename (Gergely, 2018) that is available at https://github.com/subogero/rename as opposed to linux rename.  I prefer the Perl implementation so that you can easily use regular expressions.  I first run the command with the -n flag so you can review the changes without making any actual changes.  If you're happy with the results, re-run without the -n flag.
+
+```linux
+rename -n 's/PATTERN/NEW PATTERN/g' *.gz
+```
 
 ### Symbolic links
 
-Instead of continually traversing nested directories to get to files, I create symbolic links to target directories in a top level directory.  Symbolic links can also be placed in your ~/bin directory that point to scripts that reside elsewhere on your system.  So long as those scripts are executable (e.x. chmod 755 script.plx) then the shortcut will also be executable without having to type out the complete path or copy and pasting the script into the current directory.
+Instead of continually traversing nested directories to get to files, I create symbolic links to target directories in a top level directory.  Symbolic links can also be placed in your ~/bin directory that point to scripts that reside elsewhere on your system.  So long as those scripts are executable (e.x. chmod 755 script.plx) then the shortcut will also be executable without having to type out the complete path or copy and pasting the script into the current directory.  This can be especially useful so that you don't have to maintain multiple copies of large raw read files in different places.
 
-~~~linux
+```linux
 ln -s /path/to/target/directory shortcutName
 ln -s /path/to/script/script.sh commandName
-~~~
+```
 
 ## References
 
@@ -213,4 +179,7 @@ Wang, Q., Garrity, G. M., Tiedje, J. M., & Cole, J. R. (2007). Naive Bayesian Cl
 
 ## Acknowledgements
 
-I would like to acknowledge funding from the Government of Canada through the Genomics Research and Development Initiative, Ecobiomcis Project.
+I would like to acknowledge funding from the Government of Canada through the Genomics Research and Development Initiative, Metagenomic-Based Ecosystem Biomonitoring, Ecobiomics Project.
+
+Last updated: January 9, 2020
+
