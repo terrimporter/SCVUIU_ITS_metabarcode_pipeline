@@ -10,7 +10,7 @@ This data flow has been developed using a conda environment and snakemake pipeli
 
 ## Outline
 
-[Standard pipeline](#standard-pipeline)  
+[Pipeline details](#pipeline-details)  
 
 [Implementation notes](#implementation-notes)  
 
