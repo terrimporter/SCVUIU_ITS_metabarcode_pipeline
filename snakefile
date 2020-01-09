@@ -1,5 +1,5 @@
-""" SCVUIU v2 ITS metabarcode pipeline
-By: Teresita M. Porter, Oct. 29, 2019
+""" SCVUIU v3 ITS metabarcode pipeline
+By: Teresita M. Porter, Jan. 9, 2020
 
 Metabarcode pipeline to process Illumina MiSeq reads as follows:
 
@@ -7,13 +7,11 @@ Metabarcode pipeline to process Illumina MiSeq reads as follows:
 2_Trim reads
 3_Concatenate samples for global analysis
 4_Dereplicate reads
-5_Create denoised ESVs
-6_Create ESV table
-7_ITS extraction
+5_Denoise ESVs
+6_Remove chimeras
+7_Create ESV x sample table
+8_ITS extraction
 8_Taxonomic assignment
-
-Note:
-If you get a memory error at the USEARCH unoise3 denoising step, then use the ITS alternate metabarcode pipeline instead.
 
 """
 
@@ -68,22 +66,26 @@ output2=dir+"/cat.fasta"
 gzip_out=dir+"/cat.fasta.gz"
 
 # 4_Dereplicate reads
-vsearch_out=dir+"/cat.uniques"
-vsearch_log=dir+"/dereplication.log"
+dereplicate_out=dir+"/cat.uniques"
+dereplicate_log=dir+"/dereplication.log"
 
 # 5_Create denoised ESVs
-usearch_out=dir+"/cat.denoised"
-usearch_log=dir+"/usearch.log"
+denoise_out=dir+"/cat.denoised"
+denoise_log=dir+"/usearch.log"
 
-# 6_Create ESV table
-vsearch_out2=dir+"/ESV.table"
-vsearch_log2=dir+"/table.log"
+# 6_Chimera check
+chimera_out=dir+"/cat.denoised.nonchimeras"
+chimera_log=dir+"/chimeraRemoval.log"
 
-# 7_ITS extraction
+# 7_Create ESV table
+table_out=dir+"/ESV.table"
+table_log=dir+"/table.log"
+
+# 8_ITS extraction
 itsx_out_prefix=dir+"/ITSx_out"
 itsx_out=dir+"/ITSx_out.ITS2.fasta"
 
-# 8_Taxonomic assignment
+# 9_Taxonomic assignment
 rdp_out=dir+"/rdp.out.tmp"
 rdp_out2=dir+"/rdp.out2.tmp"
 rdp_csv=dir+"/rdp.csv.tmp"
@@ -127,20 +129,22 @@ rule all:
 		# 3_Concatenate samples for global analysis (compress file)
 #		gzip_out
 		# 4_Dereplicate reads
-#		vsearch_out
+#		dereplicate_out
 		# 5_Denoise reads
-#		usearch_out
-		# 6_Create ESV table
-#		vsearch_out2
-		# 7_ITS extraction
+#		denoise_out
+		# 6_Chimera check
+#		chimera_out
+		# 7_Create ESV table
+#		table_out
+		# 8_ITS extraction
 #		itsx_out
-		# 8_Taxonomic assignment
+		# 9_Taxonomic assignment
 #		rdp_out
-		# 8_Reformat Zotu field to match ESV table
+		# 9_Reformat Zotu field to match ESV table
 #		rdp_out2
-		# 8_Taxonomic assignment (add read numbers)
+		# 9_Taxonomic assignment (add read numbers)
 #		rdp_csv
-		# 8_Taxonomic assignment (edit ESV id's to include amplicon name) [Final output file]
+		# 9_Taxonomic assignment (edit ESV id's to include amplicon name) [Final output file]
 		rdp_csv2
 	 
 #######################################################################
@@ -355,44 +359,55 @@ rule compress:
 # Dereplicate and track reads with VSEARCH
 
 rule dereplicate:
-	version: "2.13.6"
+	version: "2.14.1"
 	input:
 		gzip_out
 	output:
-		vsearch_out
-	log: vsearch_log
+		dereplicate_out
+	log: dereplicate_log
 	shell:
 		"vsearch --derep_fulllength {input} --output {output} --sizein --sizeout --log {log}"
 	
 #######################################################################
-# Denoise with USEARCH
-# Make sure this is installed locally and in your PATH
-# I changed the default name of the program to 'usearch11' to be more concise
+# Denoise with VSEARCH using unoise3 algorithm (chimera removal must be done separately in next step)
 
 rule denoise:
-	version: "11.0.667_i86linux32"
+	version: "2.14.1"
 	input:
-		vsearch_out
+		dereplicate_out
 	output:
-		usearch_out
-	log: usearch_log
+		denoise_out
+	log: denoise_log
 	shell:
-		"usearch11 -unoise3 {input} -zotus {output} -minsize {config[USEARCH][minsize]} > {log} 2>&1"
+		"vsearch --cluster_unoise {input} --sizein --sizeout --minsize {config[VSEARCH_DENOISE][minsize]} --centroids {output} --log {log}"
+
+#######################################################################
+# Chimera removal with VSEARCH using uchime_denovo3 algorithm
+
+rule chimera_removal:
+	version: "2.14.1"
+	input:
+		denoise_out
+	output:
+		chimera_out
+	log: chimera_log
+	shell:
+		"vsearch --uchime3_denovo {input} --sizein --xsize --nonchimeras {output} --relabel 'Zotu' --log {log}"
 	
 #######################################################################
 # Create ESV table
 
 rule create_ESV_table:
-	version: "2.13.16"
+	version: "2.14.1"
 	input:
-		usearch_global=gzip_out,
-		db=usearch_out
+		vsearch_global=gzip_out,
+		db=chimera_out
 	output:
-		vsearch_out2
-	threads: config["VSEARCH"]["t"]
-	log: vsearch_log2
+		table_out
+	threads: config["VSEARCH_TABLE"]["t"]
+	log: table_log
 	shell:
-		"vsearch --threads {threads} --usearch_global {input.usearch_global} --db {input.db} --id 1.0 --otutabout {output} --log {log}"
+		"vsearch --threads {threads} --usearch_global {input.vsearch_global} --db {input.db} --id 1.0 --otutabout {output} --log {log}"
 
 #######################################################################
 # Generate ITS trimmed reads
@@ -400,13 +415,13 @@ rule create_ESV_table:
 rule ITS_extraction:
 	version: "1.1b1"
 	input:
-		usearch_out
+		chimera_out
 	params:
 		prefix=itsx_out_prefix
 	output:
 		itsx_out
 	shell:
-		"ITSx -i {input} -o {params.prefix} --cpu {config[VSEARCH][t]}"
+		"ITSx -i {input} -o {params.prefix} --cpu {config[VSEARCH_TABLE][t]}"
 
 #######################################################################
 # Taxonomic assignment
@@ -442,7 +457,7 @@ rule reformat_zotu_field:
 
 rule map_read_number:
 	input:
-		table=vsearch_out2,
+		table=table_out,
 		rdp=rdp_out2
 	output:
 		temp(rdp_csv)
