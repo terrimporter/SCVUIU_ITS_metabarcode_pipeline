@@ -4,7 +4,7 @@ This repository contains an ITS metabarcode pipeline that can be used to process
 
 ## Overview 
 
-This pipeline begins with raw paired-end Illumina MiSeq fastq.gz files.  Reads are paired.  Primers are trimmed.  All the samples are pooled for a global analysis.  Reads are dereplicated and denoised producing a reference set of exact sequence variants (ESVs).  The rRNA gene regions flanking the internal transcribed spacer region are removed.  These ESVs are taxonomically assigned using an ITS reference set available with the RDP Classifier (Wang et al., 2007) available from https://sourceforge.net/projects/rdp-classifier/ .
+This pipeline begins with raw paired-end Illumina MiSeq fastq.gz files.  Reads are paired.  Primers are trimmed.  All the samples are pooled for a global analysis.  Reads are dereplicated and denoised producing a reference set of exact sequence variants (ESVs).  The rRNA gene regions flanking the internal transcribed spacer region are removed.  The current pipeline focuses on the ITS2 region.  These ESVs are taxonomically assigned using an ITS reference set available with the RDP Classifier (Wang et al., 2007) available from https://sourceforge.net/projects/rdp-classifier/ .
 
 This data flow has been developed using a conda environment and snakemake pipeline for improved reproducibility. It will be updated on a regular basis so check for the latest version at https://github.com/terrimporter/SCVUIU_ITS_metabarcode_pipeline/releases
 
