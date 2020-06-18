@@ -32,15 +32,13 @@ Reads are dereplicated (only unique sequences are retained) using VSEARCH v2.13.
 
 Denoised exact sequence variants (ESVs) are generated using VSEARCH with the unoise3 algorithm (Edgar, 2016).  This step removes any PhiX contamination, sequences with predicted errors, and rare sequences.  This step also produces zero-radius OTUs (Zotus) also referred to commonly as amplicon sequence variants (ASVs), ESVs, or 100% operational taxonomic unit (OTU) clusters.  Here, we define rare sequences to be sequence clusters containing only one or two reads (singletons and doubletons) and these are removed as 'noise'.  Putative chimeric sequences are then removed using the uchime3_denovo algorithm in VSEARCH.
 
-An ESV table that tracks read number for each ESV in each sample is generated with VSEARCH.
+An ESV table that tracks read number for each ESV in each sample is generated with VSEARCH.  The --search_exact command is used instead of --usearch_global with --id 1.0 because the search_exact method is faster and optimized for finding exact matches.
 
 Conserved rRNA gene regions (LSU, 5.8S, or SSU) are removed using the ITSx extractor v1.1b1, isolating the internal transcribed DNA spacer regions (ITS1 and/or ITS2) for subsequent taxonomic assignment (Bengtsson-Palme et al., 2013).
 
 ITS taxonomic assignments are made using the Ribosomal Database classifier v2.12 (RDP classifier) available from https://sourceforge.net/projects/rdp-classifier/ (Wang et al., 2007) using the ITS-UNITE reference dataset that comes with the classifier.
 
-The final output is reformatted to add read numbers for each sample, and column headers to improve readability, and reformats the ESV ids so they match those in the ESV table.
-
-Read and ESV statistics are provided for various steps of the program are also provided.
+The final output, rdp.csv, is reformatted to add read numbers for each sample, and column headers to improve readability, and reformats the ESV ids so they match those in the ESV table.  Taxonomic assignments with bootstrap support values are also provided for each ESV.  rdp.csv can be read into R, filtered, reformatted, and reshaped to make an ESV x sample matrix filled with read counts for standard biodiversity analyses.
 
 ### Prepare your environment to run the pipeline
 
@@ -181,5 +179,5 @@ Wang, Q., Garrity, G. M., Tiedje, J. M., & Cole, J. R. (2007). Naive Bayesian Cl
 
 I would like to acknowledge funding from the Government of Canada through the Genomics Research and Development Initiative, Metagenomic-Based Ecosystem Biomonitoring, Ecobiomics Project.
 
-Last updated: January 9, 2020
+Last updated: June 18, 2020
 
