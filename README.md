@@ -1,5 +1,7 @@
 # README
 
+**This pipeline has been replaced with MetaWorks: A flexible, scalable bioinformatic pipeline for multi-marker biodiversity assessments available from https://github.com/terrimporter/MetaWorks**
+
 This repository contains an ITS metabarcode pipeline that can be used to process Illumina MiSeq reads.  **SCVUIU** is an acronym that stands for the names of the programs/algorithms/datasets used here: **S**EQPREP, **C**UTADAPT, **V**SEARCH, **U**noise3, **I**TSx-ITS extractor, **U**NITE ITS reference set used with the RDP classifier.  
 
 ## Overview 
@@ -179,5 +181,5 @@ Wang, Q., Garrity, G. M., Tiedje, J. M., & Cole, J. R. (2007). Naive Bayesian Cl
 
 I would like to acknowledge funding from the Government of Canada through the Genomics Research and Development Initiative, Metagenomic-Based Ecosystem Biomonitoring, Ecobiomics Project.
 
-Last updated: June 18, 2020
+Last updated: July 16, 2020
 
