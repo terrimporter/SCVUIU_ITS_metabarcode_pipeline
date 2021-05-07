@@ -1,5 +1,7 @@
 # README
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4741507.svg)](https://doi.org/10.5281/zenodo.4741507)  
+
 **This pipeline has been replaced with MetaWorks: A flexible, scalable bioinformatic pipeline for multi-marker biodiversity assessments available from https://github.com/terrimporter/MetaWorks**
 
 This repository contains an ITS metabarcode pipeline that can be used to process Illumina MiSeq reads.  **SCVUIU** is an acronym that stands for the names of the programs/algorithms/datasets used here: **S**EQPREP, **C**UTADAPT, **V**SEARCH, **U**noise3, **I**TSx-ITS extractor, **U**NITE ITS reference set used with the RDP classifier.  
@@ -12,6 +14,8 @@ This data flow has been developed using a conda environment and snakemake pipeli
 
 ## Outline
 
+[How to cite](#How-to-cite)  
+
 [Pipeline details](#pipeline-details)  
 
 [Implementation notes](#implementation-notes)  
@@ -19,6 +23,11 @@ This data flow has been developed using a conda environment and snakemake pipeli
 [References](#references)  
 
 [Acknowledgements](#acknowledgements)  
+
+## How to cite
+
+You can cite this repository directly:  
+SCVUIU ITS Metabarcode pipeline, DOI: 10.5281/zenodo.4741507. 
 
 ## Pipeline details
 
@@ -181,5 +190,5 @@ Wang, Q., Garrity, G. M., Tiedje, J. M., & Cole, J. R. (2007). Naive Bayesian Cl
 
 I would like to acknowledge funding from the Government of Canada through the Genomics Research and Development Initiative, Metagenomic-Based Ecosystem Biomonitoring, Ecobiomics Project.
 
-Last updated: July 16, 2020
+Last updated: May 6, 2021
 
