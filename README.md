@@ -27,7 +27,7 @@ This data flow has been developed using a conda environment and snakemake pipeli
 ## How to cite
 
 You can cite this repository directly:  
-SCVUIU ITS Metabarcode pipeline, DOI: 10.5281/zenodo.4741507. 
+Teresita M. Porter. (2018, August 9). SCVUIU ITS Metabarcode Pipeline (Version v3.0.2). Zenodo. http://doi.org/10.5281/zenodo.4741507  
 
 ## Pipeline details
 
